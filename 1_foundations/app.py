@@ -7,7 +7,8 @@ from pypdf import PdfReader
 import gradio as gr
 
 
-load_dotenv(override=True)
+load_dotenv()
+print("OPENAI_API_KEY exists:", "OPENAI_API_KEY" in os.environ)
 
 def push(text):
     requests.post(
@@ -76,15 +77,17 @@ tools = [{"type": "function", "function": record_user_details_json},
 class Me:
 
     def __init__(self):
-        self.openai = OpenAI()
-        self.name = "Ed Donner"
-        reader = PdfReader("me/linkedin.pdf")
+        self.openai = OpenAI(
+            api_key=os.environ["OPENAI_API_KEY"]
+        )
+        self.name = "Joey Maza"
+        reader = PdfReader("me/linkedin2.pdf")
         self.linkedin = ""
         for page in reader.pages:
             text = page.extract_text()
             if text:
                 self.linkedin += text
-        with open("me/summary.txt", "r", encoding="utf-8") as f:
+        with open("me/summary2.txt", "r", encoding="utf-8") as f:
             self.summary = f.read()
 
 
