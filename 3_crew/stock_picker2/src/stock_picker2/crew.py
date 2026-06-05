@@ -1,12 +1,18 @@
+import os
 from typing import List
-
+from dotenv import load_dotenv
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai_tools import SerperDevTool
 from pydantic import BaseModel, Field
 from .tools.push_tool import PushNotificationTool
 
+load_dotenv()
 
+if "OPENAI_API_KEY" in os.environ and "CHROMA_OPENAI_API_KEY" not in os.environ:
+            os.environ["CHROMA_OPENAI_API_KEY"] = os.environ["OPENAI_API_KEY"]
+
+os.environ["CREWAI_STORAGE_DIR"] = os.path.abspath("./memory")
 
 class TrendingCompany(BaseModel):
     """Companies that are trending in the news."""
@@ -44,7 +50,8 @@ class StockPicker2():
     def trending_company_finder(self) -> Agent:
         return Agent(
             config=self.agents_config['trending_company_finder'],
-            tools=[SerperDevTool()]
+            tools=[SerperDevTool()],
+            memory= True
         )
 
     @agent
@@ -58,7 +65,8 @@ class StockPicker2():
     def stock_picker(self) -> Agent:
         return Agent(
             config=self.agents_config['stock_picker'],
-            tools=[PushNotificationTool()]
+            memory=True
+            #tools=[PushNotificationTool()]
         )
 
     @task
@@ -84,6 +92,12 @@ class StockPicker2():
     @crew
     def crew(self) -> Crew:
         """Creates the StockPicker2 crew."""
+        
+        if "OPENAI_API_KEY" in os.environ and "CHROMA_OPENAI_API_KEY" not in os.environ:
+            os.environ["CHROMA_OPENAI_API_KEY"] = os.environ["OPENAI_API_KEY"]
+
+        os.environ["CREWAI_STORAGE_DIR"] = os.path.abspath("./memory")
+
         manager = Agent(
             config=self.agents_config['manager'],
             allow_delegation=True,
@@ -94,6 +108,14 @@ class StockPicker2():
             tasks=self.tasks,
             process=Process.hierarchical,
             verbose=True,
-            manager_agent=manager
+            manager_agent=manager,
+            memory=True,
+            embedder={
+                "provider": "openai",
+                "config": {
+                    "api_key": os.getenv("OPENAI_API_KEY"),
+                    "model_name": "text-embedding-3-small"
+                },
+            },
             
         )
